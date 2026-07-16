@@ -1,0 +1,16 @@
+{
+  "name": "seeyou-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SeeYou 情侣约会 App - Node 后端 + 单文件前端(CloudBase 云数据库 + 云存储持久化)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@cloudbase/node-sdk": "^2.9.0"
+  },
+  "engines": {
+    "node": ">=14"
+  }
+}

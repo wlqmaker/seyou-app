@@ -1,0 +1,24 @@
+# Render Blueprint —— SeeYou App
+# 说明：本文件用于 Render 一键部署（Web Service）。
+# 若使用腾讯云 CloudBase，请忽略此文件，改看 DEPLOY-CLOUDBASE.md。
+services:
+  - type: web
+    name: seeyou-app
+    runtime: node
+    plan: free
+    region: oregon
+    branch: main
+    buildCommand: "npm install"
+    startCommand: "node server.js"
+    healthCheckPath: "/"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # 若改用 CloudBase 持久化（见 DEPLOY-CLOUDBASE.md），取消下行注释并填环境 ID
+      # - key: TCB_ENV
+      #   value: your-cloudbase-env-id
+      # 免费版容器文件系统临时，需持久化请升级 Starter 并取消以下 disk 段：
+      # disk:
+      #   name: seeyou-data
+      #   mountPath: /data
+      #   sizeGB: 1
