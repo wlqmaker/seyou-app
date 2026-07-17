@@ -23,7 +23,9 @@ let db = { relations: {} };
 function initTcb() {
   if (!TCB_ENV) return false;
   try {
+    // 防御：@cloudbase/node-sdk 可能未安装(npm install 失败/超时)，require 不能崩主进程
     const cloudbase = require("@cloudbase/node-sdk");
+    if (!cloudbase || !cloudbase.init) { console.warn("[SeeYou] @cloudbase/node-sdk 加载异常，回退本地"); return false; }
     tcbApp = cloudbase.init({ env: TCB_ENV });
     tcbDb = tcbApp.database();
     USE_TCB = true;
@@ -296,12 +298,19 @@ const server = http.createServer(async function (req, res) {
   }
 });
 
-// 先初始化存储并加载数据，再启动监听
-initTcb();
+// 先初始化存储并加载数据，再启动监听（防崩：即使 SDK/数据库异常也要保证端口起来）
+try { initTcb(); } catch (e) { console.warn("[SeeYou] initTcb 异常(已忽略):", e && e.message); }
 loadDb().then(function () {
   server.listen(PORT, function () {
     console.log("SeeYou 后端已启动： http://localhost:" + PORT);
     console.log("存储模式：" + (USE_TCB ? "CloudBase 云数据库 + 云存储(数据/照片持久)" : "本地 db.json + ./uploads"));
     console.log("用浏览器打开上面的地址，按提示创建/加入关系即可双人绑定。");
+  });
+}).catch(function (e) {
+  // 即使 loadDb 失败也强制启动服务器（数据为空总比不服务好）
+  console.warn("[SeeYou] loadDb 异常，以空数据启动：", e && e.message);
+  db = { relations: {} };
+  server.listen(PORT, function () {
+    console.log("SeeYou 后端已启动（空数据模式）： http://localhost:" + PORT);
   });
 });
