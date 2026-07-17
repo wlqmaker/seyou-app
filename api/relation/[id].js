@@ -1,39 +1,56 @@
 // Vercel Serverless: GET /api/relation/:id & POST /api/relation/:id/sync
-import { put, list } from "@vercel/blob";
+const DB_PREFIX = "seyou:";
 
-const DATA_KEY = "seeyou/data/db.json";
-
-async function loadDb() {
+let _kv = null;
+async function getKV() {
+  if (_kv !== null) return _kv;
   try {
-    const blobs = await list({ prefix: "seeyou/data/" });
-    const dbBlob = blobs.blobs.find((b) => b.pathname === "seeyou/data/db.json");
-    if (!dbBlob) return { relations: {} };
-    const res = await fetch(dbBlob.url);
-    if (!res.ok) return { relations: {} };
-    return await res.json();
+    const mod = await import("@vercel/kv");
+    _kv = mod.default || mod;
+    return _kv;
   } catch (e) {
-    console.error("[loadDb]", e.message);
-    return { relations: {} };
+    _kv = false;
+    return null;
   }
 }
 
-async function saveDb(db) {
+// 内存回退
+let memDb = { relations: {} };
+
+async function loadDb() {
+  const kv = await getKV();
+  if (!kv) return memDb;
+
   try {
-    await put(DATA_KEY, JSON.stringify(db), {
-      access: "public",
-      contentType: "application/json",
-      allowOverwrite: true,
-    });
+    const raw = await kv.get(DB_PREFIX + "db");
+    if (raw) return JSON.parse(raw);
   } catch (e) {
-    console.error("[saveDb]", e.message);
+    console.error("[loadDb] kv error:", e.message);
+  }
+  return { relations: {} };
+}
+
+async function saveDb(db) {
+  const kv = await getKV();
+  if (!kv) { memDb = db; return; }
+
+  try {
+    await kv.set(DB_PREFIX + "db", JSON.stringify(db));
+  } catch (e) {
+    console.error("[saveDb] kv error:", e.message);
+    memDb = db;
   }
 }
 
 function mergeById(arr, inc) {
-  inc = inc || [];
+  if (!inc) inc = [];
   const map = {};
-  (arr || []).forEach((x) => { if (x && x.id) map[x.id] = x; });
-  inc.forEach((x) => { if (x && x.id) map[x.id] = x; });
+  (arr || []).forEach((x) => {
+    if (x && x.id) map[x.id] = x;
+  });
+  inc.forEach((x) => {
+    if (x && x.id) map[x.id] = x;
+  });
   return Object.keys(map).map((k) => map[k]);
 }
 
@@ -43,8 +60,7 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   if (req.method === "OPTIONS") { res.status(204).end(); return; }
 
-  // Vercel passes query as req.query, dynamic segments in req.query too
-  const rid = req.query.id;
+  const rid = req.query?.id;
   if (!rid) {
     return res.status(400).json({ error: "missing relation id" });
   }
@@ -56,9 +72,9 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: "关系不存在" });
     }
 
-    // GET /api/relation/:id — pull relation data
+    // GET /api/relation/:id — 拉取关系数据
     if (req.method === "GET") {
-      const device = req.query.device;
+      const device = req.query?.device;
       const you =
         rel.sideA && rel.sideB
           ? device === rel.sideA.deviceId
@@ -92,7 +108,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // POST /api/relation/:id/sync — sync data
+    // POST /api/relation/:id — 同步数据（兼容前端直接 POST 到 id）
     if (req.method === "POST") {
       const body = req.body || {};
       const dev = body.deviceId;

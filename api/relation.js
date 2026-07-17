@@ -1,31 +1,47 @@
-// Vercel Serverless: POST /api/relation (创建关系) & POST /api/relation/join (加入关系)
-import { put, head, list } from "@vercel/blob";
+// Vercel Serverless: POST /api/relation & POST /api/relation/join
+// 数据存储：优先 Vercel KV，无则内存模式（重启丢失）
+const DB_PREFIX = "seyou:";
 
-const DATA_KEY = "seeyou/data/db.json";
-
-async function loadDb() {
+// 延迟加载 KV（避免未配置时报错）
+let _kv = null;
+async function getKV() {
+  if (_kv !== null) return _kv;
   try {
-    const blobs = await list({ prefix: "seeyou/data/" });
-    const dbBlob = blobs.blobs.find((b) => b.pathname === "seeyou/data/db.json");
-    if (!dbBlob) return { relations: {} };
-    const res = await fetch(dbBlob.url);
-    if (!res.ok) return { relations: {} };
-    return await res.json();
+    const mod = await import("@vercel/kv");
+    _kv = mod.default || mod;
+    return _kv;
   } catch (e) {
-    console.error("[loadDb]", e.message);
-    return { relations: {} };
+    _kv = false;
+    return null;
   }
 }
 
-async function saveDb(db) {
+// ===== 内存回退存储 =====
+let memDb = { relations: {} };
+
+async function loadDb() {
+  const kv = await getKV();
+  if (!kv) return memDb;
+
   try {
-    await put(DATA_KEY, JSON.stringify(db), {
-      access: "public",
-      contentType: "application/json",
-      allowOverwrite: true,
-    });
+    const raw = await kv.get(DB_PREFIX + "db");
+    if (raw) return JSON.parse(raw);
   } catch (e) {
-    console.error("[saveDb]", e.message);
+    console.error("[loadDb] kv error:", e.message);
+  }
+  return { relations: {} };
+}
+
+async function saveDb(db) {
+  const kv = await getKV();
+  if (!kv) { memDb = db; return; }
+
+  try {
+    await kv.set(DB_PREFIX + "db", JSON.stringify(db));
+  } catch (e) {
+    console.error("[saveDb] kv error:", e.message);
+    // 回退到内存
+    memDb = db;
   }
 }
 
@@ -44,7 +60,6 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   res.setHeader("Access-Control-Allow-Methods", "POST,OPTIONS");
   if (req.method === "OPTIONS") { res.status(204).end(); return; }
-
   if (req.method !== "POST") {
     return res.status(405).json({ error: "method not allowed" });
   }
@@ -99,13 +114,9 @@ export default async function handler(req, res) {
         }
       }
       if (!found)
-        return res
-          .status(404)
-          .json({ error: "配对码无效或已绑定" });
+        return res.status(404).json({ error: "配对码无效或已绑定" });
       if (found.sideB)
-        return res
-          .status(409)
-          .json({ error: "该关系已有另一半" });
+        return res.status(409).json({ error: "该关系已有另一半" });
 
       const deviceId = genId();
       found.sideB = {
