@@ -183,6 +183,27 @@ const server = http.createServer(async function (req, res) {
     return;
   }
 
+  // PWA 静态资源（manifest / service worker / 图标）
+  const PWA = {
+    "/manifest.webmanifest": "application/manifest+json; charset=utf-8",
+    "/sw.js": "text/javascript; charset=utf-8",
+    "/icon-192.png": "image/png",
+    "/icon-512.png": "image/png",
+    "/apple-touch-icon.png": "image/png"
+  };
+  if (req.method === "GET" && PWA[p]) {
+    const fp = path.join(ROOT, p.slice(1));
+    fs.readFile(fp, function (e, data) {
+      if (e) { res.writeHead(404); res.end("not found"); return; }
+      res.writeHead(200, {
+        "Content-Type": PWA[p],
+        "Cache-Control": "public, max-age=86400"
+      });
+      res.end(data);
+    });
+    return;
+  }
+
   if (p.indexOf("/api/") !== 0) { res.writeHead(404); res.end("not found"); return; }
 
   try {
