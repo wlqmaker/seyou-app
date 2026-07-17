@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#8a6cf0" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="SeeYou" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<title>SeeYou · 情侣约会</title>
+<style>
+  :root {
+    --pink: #ff6b8b;
+    --pink-soft: #ffd6e0;
+    --purple: #8a6cf0;
+    --bg: #faf7fb;
+    --card: #ffffff;
+    --text: #2c2c3a;
+    --muted: #9a96a8;
+    --line: #f0ebf3;
+    --online: #2ecc71;
+    --offline: #bdc3c7;
+    --busy: #f39c12;
+    --shadow: 0 6px 20px rgba(138, 108, 240, 0.10);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  #app {
+    max-width: 430px;
+    margin: 0 auto;
+    min-height: 100vh;
+    background: var(--bg);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .screen { flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+  .hidden { display: none !important; }
+  #screen-main { position: relative; }
+  #home-bg {
+    position: absolute; inset: 0; z-index: 0;
+    background: linear-gradient(160deg, #ffe3ec 0%, #efe6ff 100%);
+    background-size: cover; background-position: center;
+  }
+  .role-switch {
+    display: inline-block; margin-top: 8px; font-size: 12px; color: var(--purple);
+    background: rgba(255, 255, 255, 0.6); border-radius: 999px; padding: 5px 12px; cursor: pointer;
+    backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  }
+
+  /* ---------- 绑定屏 ---------- */
+  #screen-bind {
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(160deg, #ffe3ec 0%, #efe6ff 100%);
+    padding: 28px;
+  }
+  .bind-logo {
+    font-size: 46px;
+    margin-bottom: 4px;
+  }
+  .bind-title {
+    font-size: 26px;
+    font-weight: 800;
+    background: linear-gradient(90deg, var(--pink), var(--purple));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin: 8px 0 2px;
+  }
+  .bind-sub { color: var(--muted); margin-bottom: 28px; font-size: 13px; }
+  .bind-card {
+    width: 100%;
+    background: var(--card);
+    border-radius: 20px;
+    padding: 22px 20px;
+    box-shadow: var(--shadow);
+  }
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .field input {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 15px;
+    outline: none;
+    background: #fcfaff;
+    color: var(--text);
+  }
+  .field input:focus { border-color: var(--purple); }
+  .btn {
+    width: 100%;
+    border: none;
+    border-radius: 14px;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    color: #fff;
+    background: linear-gradient(90deg, var(--pink), var(--purple));
+    box-shadow: var(--shadow);
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--purple);
+    box-shadow: none;
+    border: 1px solid var(--purple);
+    margin-top: 10px;
+    font-weight: 600;
+  }
+  .err { color: #e74c3c; font-size: 13px; min-height: 18px; margin-top: 4px; }
+
+  /* ---------- 主框架 ---------- */
+  header.topbar {
+    padding: 16px 18px 10px;
+    background: rgba(255, 255, 255, 0.42);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom-left-radius: 22px;
+    border-bottom-right-radius: 22px;
+    position: relative;
+    z-index: 1;
+  }
+  .topbar h1 { margin: 0; font-size: 19px; font-weight: 800; }
+  .topbar .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  main { flex: 1; overflow-y: auto; padding: 16px 16px 90px; position: relative; z-index: 1; }
+
+  .card {
+    background: rgba(255, 255, 255, 0.66);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: var(--shadow);
+    margin-bottom: 14px;
+  }
+  .card-title { font-size: 14px; font-weight: 700; margin: 0 0 12px; display: flex; align-items: center; gap: 6px; }
+
+  /* 情侣名片 */
+  .couple-row { display: flex; align-items: center; gap: 12px; }
+  .avatar {
+    width: 52px; height: 52px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 700; color: #fff;
+    position: relative; flex-shrink: 0;
+  }
+  .avatar.me { background: linear-gradient(135deg, var(--pink), #ff9aa9); }
+  .avatar.partner { background: linear-gradient(135deg, var(--purple), #b59cf5); }
+  .dot {
+    position: absolute; right: -1px; bottom: -1px;
+    width: 15px; height: 15px; border-radius: 50%;
+    border: 3px solid #fff;
+  }
+  .dot.online { background: var(--online); }
+  .dot.offline { background: var(--offline); }
+  .dot.busy { background: var(--busy); }
+  .couple-mid { flex: 1; }
+  .couple-mid .name { font-weight: 700; font-size: 15px; }
+  .couple-mid .days { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .heart { font-size: 22px; }
+  .status-line { font-size: 12px; color: var(--muted); margin-top: 10px; text-align: center; }
+  .status-line b { color: var(--purple); }
+
+  /* 照片墙 */
+  .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .photo-grid img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; cursor: pointer; }
+  .photo-empty { color: var(--muted); font-size: 13px; text-align: center; padding: 18px 0; }
+  .upload-btn {
+    display: flex; align-items: center; justify-content: center;
+    aspect-ratio: 1; border: 2px dashed var(--pink-soft);
+    border-radius: 12px; color: var(--pink); font-size: 28px; cursor: pointer;
+  }
+
+  /* 下一个约会 */
+  .next-date .row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .next-date .when { font-weight: 700; font-size: 16px; }
+  .next-date .loc { color: var(--muted); font-size: 13px; }
+  .tag {
+    display: inline-block; background: var(--pink-soft); color: var(--pink);
+    font-size: 12px; padding: 3px 9px; border-radius: 999px; margin: 3px 4px 0 0;
+  }
+  .next-empty { color: var(--muted); font-size: 13px; }
+
+  /* 计划列表 */
+  .plan-item { border: 1px solid var(--line); border-radius: 14px; padding: 13px; margin-bottom: 12px; }
+  .plan-item.done { opacity: 0.6; }
+  .plan-head { display: flex; justify-content: space-between; align-items: center; }
+  .plan-when { font-weight: 700; font-size: 15px; }
+  .plan-state { font-size: 12px; color: var(--muted); }
+  .plan-state.finished { color: var(--online); }
+  .plan-meta { font-size: 13px; color: var(--text); margin-top: 6px; }
+  .plan-meta .k { color: var(--muted); }
+  .plan-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .mini-btn {
+    flex: 1; border: 1px solid var(--line); background: #fff; border-radius: 10px;
+    padding: 8px; font-size: 13px; cursor: pointer; color: var(--text);
+  }
+  .mini-btn.done { color: var(--online); border-color: var(--online); }
+  .mini-btn.del { color: #e74c3c; border-color: #f5c6c6; }
+
+  /* 表单弹窗 */
+  .modal-mask {
+    position: fixed; inset: 0; background: rgba(40, 30, 60, 0.45);
+    display: flex; align-items: flex-end; justify-content: center; z-index: 50;
+  }
+  .sheet {
+    background: #fff; width: 100%; max-width: 430px; border-top-left-radius: 22px;
+    border-top-right-radius: 22px; padding: 20px 18px 28px; max-height: 88vh; overflow-y: auto;
+  }
+  .sheet h3 { margin: 0 0 14px; font-size: 17px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    border: 1px solid var(--line); background: #fcfaff; border-radius: 999px;
+    padding: 8px 14px; font-size: 13px; cursor: pointer; color: var(--text);
+  }
+  .chip.on { background: linear-gradient(90deg, var(--pink), var(--purple)); color: #fff; border-color: transparent; }
+  .sheet textarea { resize: none; min-height: 70px; }
+
+  /* 设置 */
+  .set-row { display: flex; justify-content: space-between; align-items: center; padding: 13px 0; border-bottom: 1px solid var(--line); }
+  .set-row:last-child { border-bottom: none; }
+  .set-row .label { font-size: 14px; }
+  .set-row input, .set-row select {
+    border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 14px; background: #fcfaff; outline: none; max-width: 55%;
+  }
+  .danger { color: #e74c3c; }
+
+  /* 底部导航 */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 430px;
+    display: flex; background: #fff; border-top: 1px solid var(--line);
+    padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); z-index: 40;
+  }
+  .nav-item {
+    flex: 1; text-align: center; font-size: 12px; color: var(--muted);
+    cursor: pointer; padding-top: 4px;
+  }
+  .nav-item .ico { font-size: 21px; display: block; margin-bottom: 2px; }
+  .nav-item.active { color: var(--purple); font-weight: 700; }
+
+  /* 预览大图 */
+  .prev-mask { position: fixed; inset: 0; background: #000; display: flex; align-items: center; justify-content: center; z-index: 80; }
+  .prev-mask img { max-width: 100%; max-height: 100%; }
+
+  /* 待办清单（表单内） */
+  .todo-list { margin-top: 8px; }
+  .todo-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .todo-row input[type=text] { flex: 1; }
+  .todo-row .x { color: var(--muted); cursor: pointer; font-size: 18px; line-height: 1; padding: 0 4px; }
+  .todo-add { margin-top: 8px; font-size: 13px; color: var(--purple); cursor: pointer; }
+
+  /* 待办清单（计划卡片内） */
+  .plan-todos { margin-top: 10px; border-top: 1px dashed rgba(0,0,0,.10); padding-top: 8px; }
+  .plan-todo { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 3px 0; cursor: pointer; }
+  .plan-todo .cb { width: 16px; height: 16px; flex: 0 0 16px; border-radius: 4px; border: 1.5px solid var(--purple); display: flex; align-items: center; justify-content: center; font-size: 11px; color: #fff; }
+  .plan-todo.done .cb { background: var(--purple); }
+  .plan-todo.done span { text-decoration: line-through; color: var(--muted); }
+  .plan-todo .txt { flex: 1; }
+
+  /* 纪念卡弹层 */
+  .modal-card { position: fixed; inset: 0; background: rgba(0,0,0,.62); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 90; padding: 18px; }
+  .modal-card canvas { max-width: 100%; max-height: 62vh; border-radius: 16px; box-shadow: 0 12px 40px rgba(0,0,0,.4); }
+
+  /* 灵感页 */
+  .idea-hero { background: linear-gradient(135deg, rgba(255,217,232,.72), rgba(227,212,255,.72)); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-radius: 18px; padding: 18px 16px; text-align: center; margin-bottom: 12px; box-shadow: var(--shadow); }
+  .idea-hero-title { font-size: 19px; font-weight: 800; color: #5b2d82; }
+  .idea-hero-sub { font-size: 12.5px; color: #7a6a8a; margin: 6px 0 12px; line-height: 1.5; }
+  .idea-rand { width: 100%; }
+  .idea-cats { margin-bottom: 10px; }
+  .idea-tools { margin-bottom: 12px; text-align: right; }
+  .idea-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: rgba(255,255,255,.62); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); border-radius: 14px; padding: 12px 14px; margin-bottom: 9px; box-shadow: 0 2px 8px rgba(180,140,200,.12); }
+  .idea-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .idea-emoji { font-size: 20px; flex: 0 0 auto; }
+  .idea-text { font-size: 14.5px; color: #3a2a4a; line-height: 1.4; }
+  .idea-cat { font-size: 10.5px; color: #fff; background: var(--purple); border-radius: 8px; padding: 1px 7px; margin-left: 6px; white-space: nowrap; }
+  .idea-acts { display: flex; gap: 6px; flex: 0 0 auto; }
+  .idea-acts .mini-btn { font-size: 12px; padding: 6px 9px; }
+  .idea-wish-on { background: #ffd54f !important; color: #6b4e00 !important; border-color: #ffd54f !important; }
+  .idea-empty { text-align: center; color: var(--muted); padding: 30px 10px; font-size: 13px; }
+  .card-actions { margin-top: 16px; display: flex; gap: 12px; }
+  .card-tip { color: #fff; font-size: 12px; margin-top: 10px; opacity: .8; }
+  .prev-close { position: absolute; top: 18px; right: 18px; color: #fff; font-size: 28px; cursor: pointer; }
+
+  /* FAB */
+  .fab {
+    position: fixed; right: 18px; bottom: 78px; left: auto;
+    width: 56px; height: 56px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--pink), var(--purple));
+    color: #fff; font-size: 28px; border: none; box-shadow: 0 8px 22px rgba(138,108,240,0.4);
+    cursor: pointer; z-index: 45; display: flex; align-items: center; justify-content: center;
+  }
+  .fab:active { transform: scale(0.94); }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ============ 绑定屏 ============ -->
+  <div id="screen-bind" class="screen">
+    <div class="bind-logo">💕</div>
+    <div class="bind-title">SeeYou</div>
+    <div class="bind-sub">和 TA 一起规划每一次见面</div>
+    <div class="bind-card">
+      <div class="field">
+        <label>我的昵称</label>
+        <input id="bind-nick" type="text" placeholder="例如：小可爱" maxlength="12" />
+      </div>
+      <div class="field">
+        <label>配对码（留空 = 创建关系；填 TA 给的码 = 加入）</label>
+        <input id="bind-code" type="text" inputmode="numeric" placeholder="例如：123456" maxlength="8" />
+      </div>
+      <div class="field">
+        <label>在一起纪念日（默认今天）</label>
+        <input id="bind-anniv" type="date" />
+      </div>
+      <div class="err" id="bind-err"></div>
+      <button class="btn" id="bind-submit">创建 / 加入关系</button>
+      <button class="btn btn-ghost" id="bind-sim">🤖 模拟另一半（单人体验）</button>
+    </div>
+  </div>
+
+  <!-- ============ 主应用 ============ -->
+  <div id="screen-main" class="screen hidden">
+    <div id="home-bg"></div>
+    <header class="topbar">
+      <h1 id="top-title">首页</h1>
+      <div class="sub" id="top-sub">SeeYou · 你们的专属空间</div>
+      <div class="role-switch" id="role-switch">当前身份：我 · 点击切换</div>
+    </header>
+
+    <main>
+      <!-- 首页 -->
+      <section id="view-home">
+        <div class="card">
+          <div class="couple-row">
+            <div class="avatar me" id="ava-me">我<span class="dot online" id="dot-me"></span></div>
+            <div class="heart">❤️</div>
+            <div class="avatar partner" id="ava-partner">TA<span class="dot online" id="dot-partner"></span></div>
+            <div class="couple-mid">
+              <div class="name" id="home-names">— & 一</div>
+              <div class="days" id="home-days">已相恋 0 天</div>
+            </div>
+          </div>
+          <div class="status-line">对方当前：<b id="partner-status-text">想你</b>（点击圆点切换心情）</div>
+        </div>
+
+        <div class="card next-date" id="next-date-card">
+          <div class="card-title">📅 下一次约会</div>
+          <div id="next-date-body"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📸 甜蜜瞬间</div>
+          <div class="photo-grid" id="photo-grid"></div>
+        </div>
+      </section>
+
+      <!-- 计划 -->
+      <section id="view-plans" class="hidden">
+        <div class="card-title" style="margin:0 0 12px;">🗓️ 全部约会计划</div>
+        <div id="plan-list"></div>
+      </section>
+
+      <!-- 灵感 -->
+      <section id="view-ideas" class="hidden">
+        <div class="idea-hero">
+          <div class="idea-hero-title">不知道去哪约会？</div>
+          <div class="idea-hero-sub">从 100 件小事里挑一件，点「加入计划」就能直接安排</div>
+          <button class="btn idea-rand" id="idea-random">🎲 帮我随机选一件</button>
+        </div>
+        <div class="chips idea-cats" id="idea-cats"></div>
+        <div class="idea-tools">
+          <button class="mini-btn" id="idea-wishlist">⭐ 我的想做清单（<span id="wish-count">0</span>）</button>
+        </div>
+        <div id="idea-list"></div>
+      </section>
+
+      <!-- 我的 -->
+      <section id="view-mine" class="hidden">
+        <div class="card">
+          <div class="card-title">⚙️ 设置</div>
+          <div class="set-row">
+            <span class="label">我的昵称</span>
+            <input id="set-my-nick" type="text" maxlength="12" />
+          </div>
+          <div class="set-row">
+            <span class="label">对方昵称</span>
+            <input id="set-partner-nick" type="text" maxlength="12" />
+          </div>
+          <div class="set-row">
+            <span class="label">在一起纪念日</span>
+            <input id="set-anniv" type="date" />
+          </div>
+          <div class="set-row">
+            <span class="label" id="label-status">模拟对方状态</span>
+            <select id="set-status">
+              <option value="miss">💭 想你</option>
+              <option value="hit">👊 锤你</option>
+              <option value="pinch">👂 揪你耳朵</option>
+              <option value="here">✨ 在呢</option>
+              <option value="busy">🌀 忙ing</option>
+              <option value="sleep">😴 睡着了</option>
+            </select>
+          </div>
+          <div class="set-row">
+            <span class="label">首页背景图</span>
+            <button class="mini-btn" id="set-bg" style="flex:0 0 90px;">更换</button>
+          </div>
+          <div class="set-row">
+            <span class="label">恢复默认背景</span>
+            <button class="mini-btn del" id="reset-bg" style="flex:0 0 90px;">恢复</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🧹 数据管理</div>
+          <div class="set-row">
+            <span class="label">清空甜蜜瞬间</span>
+            <button class="mini-btn del" id="clear-photos" style="flex:0 0 90px;">清空</button>
+          </div>
+          <div class="set-row">
+            <span class="label">清空约会计划</span>
+            <button class="mini-btn del" id="clear-plans" style="flex:0 0 90px;">清空</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="set-row" style="border:none;">
+            <button class="mini-btn del danger" id="unbind" style="width:100%;">解除绑定并退出</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <button class="fab hidden" id="fab-add">＋</button>
+
+    <nav class="bottom-nav">
+      <div class="nav-item active" data-view="home"><span class="ico">🏠</span>首页</div>
+      <div class="nav-item" data-view="plans"><span class="ico">🗓️</span>计划</div>
+      <div class="nav-item" data-view="ideas"><span class="ico">💡</span>灵感</div>
+      <div class="nav-item" data-view="mine"><span class="ico">👤</span>我的</div>
+    </nav>
+  </div>
+
+  <!-- ============ 计划表单弹窗 ============ -->
+  <div id="modal-plan" class="modal-mask hidden">
+    <div class="sheet">
+      <h3 id="sheet-title">新建约会计划</h3>
+      <div class="field">
+        <label>日期时间</label>
+        <input id="plan-datetime" type="datetime-local" />
+      </div>
+      <div class="field">
+        <label>地点</label>
+        <input id="plan-loc" type="text" placeholder="例如：万达影城" maxlength="30" />
+      </div>
+      <div class="field">
+        <label>玩什么（可多选）</label>
+        <div class="chips" id="plan-acts"></div>
+      </div>
+      <div class="field">
+        <label>吃什么</label>
+        <input id="plan-food" type="text" placeholder="例如：火锅" maxlength="30" />
+      </div>
+      <div class="field">
+        <label>备注</label>
+        <textarea id="plan-note" placeholder="想说的话…" maxlength="120"></textarea>
+      </div>
+      <div class="field">
+        <label>待办清单</label>
+        <div id="plan-todos" class="todo-list"></div>
+        <button type="button" class="btn btn-ghost" id="todo-add" style="margin-top:8px;">＋ 添加待办</button>
+      </div>
+      <div class="err" id="plan-err"></div>
+      <button class="btn" id="plan-save">保存计划</button>
+      <button class="btn btn-ghost" id="plan-cancel">取消</button>
+    </div>
+  </div>
+
+  <!-- 大图预览 -->
+  <div id="prev-mask" class="prev-mask hidden">
+    <span class="prev-close" id="prev-close">×</span>
+    <img id="prev-img" src="" alt="preview" />
+  </div>
+
+  <input type="file" id="bg-input" accept="image/*" style="display:none" />
+
+  <!-- 约会纪念卡 -->
+  <div id="modal-card" class="modal-card hidden">
+    <canvas id="card-canvas" width="720" height="1080"></canvas>
+    <div class="card-actions">
+      <button class="btn" id="card-save">保存图片</button>
+      <button class="btn btn-ghost" id="card-share">分享</button>
+      <button class="btn btn-ghost" id="card-close">关闭</button>
+    </div>
+    <div class="card-tip">长按图片可保存，或点「分享」发送到其他平台</div>
+  </div>
+
+  <!-- 约会清单卡 -->
+  <div id="modal-list" class="modal-card hidden">
+    <canvas id="list-canvas" width="720" height="1080"></canvas>
+    <div class="card-actions">
+      <button class="btn" id="list-save">保存图片</button>
+      <button class="btn btn-ghost" id="list-share">分享</button>
+      <button class="btn btn-ghost" id="list-close">关闭</button>
+    </div>
+    <div class="card-tip">长按图片可保存，或点「分享」发送到其他平台</div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---------- 数据层 ----------
+  var LS = { couple: "seeyou_couple", photos: "seeyou_photos", plans: "seeyou_plans" };
+  function load(k, d) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+  function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+
+  var ACTIVITIES = ["看电影", "逛街", "户外运动", "探店", "看展", "宅家"];
+  var TODO_SUGGEST = {
+    "看电影": ["买好电影票", "选好座位", "提前 15 分钟到场"],
+    "逛街": ["带充电宝", "留好停车费", "列好想买清单"],
+    "户外运动": ["查好天气", "准备装备和水", "约好碰面点"],
+    "探店": ["提前订位", "看点评避雷", "拍好打卡照"],
+    "看展": ["线上购门票", "约好时间段", "带好学生证/优惠"],
+    "宅家": ["备好零食饮料", "选好片单", "调好空调温度"]
+  };
+  // 情侣 100 件小事（索引即 id）
+  var IDEAS = [
+    ["daily","一起煮一顿饭"],["daily","去超市采购一周食材"],["daily","一起叠衣服收拾房间"],
+    ["daily","散步逛附近的公园"],["daily","陪对方去体检"],["daily","给家里换个新布置"],
+    ["daily","帮对方按摩肩颈"],["daily","一起遛狗或撸猫"],["daily","给对方做顿爱心早餐"],
+    ["daily","一起晾衣服收衣服"],["daily","周末一起睡到自然醒"],["daily","一起整理手机里的合照"],
+    ["romantic","一起看一场日落"],["romantic","给对方写一封手写信"],["romantic","在阳台一起数星星"],
+    ["romantic","准备一场惊喜约会"],["romantic","一起种一盆花"],["romantic","互给对方画一张画像"],
+    ["romantic","在雨中撑一把伞散步"],["romantic","录一段说给对方的情话"],["romantic","在纪念日记一件小事"],
+    ["romantic","一起看一部爱情电影"],["romantic","给对方写一张便利贴"],["romantic","在对方包里塞小纸条"],
+    ["romantic","一起泡脚放松"],
+    ["food","探一家没去过的餐厅"],["food","一起做奶茶或咖啡"],["food","去夜市吃遍小吃"],
+    ["food","一起烤饼干"],["food","挑战做对方家乡菜"],["food","去吃一次早午餐 brunch"],
+    ["food","一起包饺子"],["food","去草莓园摘草莓"],["food","一起煮火锅"],
+    ["food","试做一道网红甜品"],["food","去菜市场买菜做饭"],["food","一起喝一杯红酒"],
+    ["food","给对方剥一盘虾"],
+    ["outdoor","爬一座小山"],["outdoor","去海边踏浪"],["outdoor","一起骑行十公里"],
+    ["outdoor","去公园野餐"],["outdoor","玩一次飞盘"],["outdoor","去露营看星空"],
+    ["outdoor","一起放风筝"],["outdoor","去动物园看动物"],["outdoor","江边夜跑"],
+    ["outdoor","去植物园拍照"],["outdoor","一起划船"],["outdoor","去滑雪或滑冰"],
+    ["home","窝沙发看一整天剧"],["home","一起打一局游戏"],["home","拼一幅拼图"],
+    ["home","一起看老照片回忆"],["home","给对方剪指甲"],["home","一起敷面膜"],
+    ["home","窝在一起听同一首歌"],["home","一起整理歌单"],["home","给对方读一段书"],
+    ["home","一起做拉伸运动"],["home","互相给对方洗头"],["home","一起看一部纪录片"],
+    ["creative","一起拍一组情侣写真"],["creative","做一本你们的相册"],["creative","一起录一支短视频"],
+    ["creative","手作一份礼物送对方"],["creative","一起写一年后的信"],["creative","给对方写一首诗"],
+    ["creative","一起做陶艺"],["creative","画一对情侣手账"],["creative","一起学一支舞蹈"],
+    ["creative","拍一张年度对比照"],["creative","做一张专属歌单封面"],["creative","一起做手工蜡烛"],
+    ["travel","来一场说走就走的短途游"],["travel","去一座没去过的城市"],["travel","住一晚有风景的民宿"],
+    ["travel","一起看一次 live 演出"],["travel","去游乐园玩一天"],["travel","坐一次旋转木马"],
+    ["travel","去泡一次温泉"],["travel","看一次日出"],["travel","去古镇走走"],
+    ["travel","一起坐观景摩天轮"],["travel","去海岛度假"],
+    ["night","一起熬夜聊到天亮"],["night","半夜吃一碗泡面"],["night","一起看恐怖片抱团"],
+    ["night","深夜压马路"],["night","一起看午夜场电影"],["night","给对方讲一个睡前故事"],
+    ["night","一起数羊入睡"],["night","深夜视频通话"],["night","一起看星星许愿"],
+    ["night","半夜起来看流星雨"],
+    ["daily","一起做年终总结"],["romantic","给对方准备生日惊喜"],["home","一起养一盆多肉"],
+    ["creative","去拍一组情侣证件照"],["home","一起写愿望清单"]
+  ];
+  var IDEA_CATS = [
+    { k: "all", n: "全部" }, { k: "daily", n: "日常" }, { k: "romantic", n: "浪漫" },
+    { k: "food", n: "美食" }, { k: "outdoor", n: "户外" }, { k: "home", n: "宅家" },
+    { k: "creative", n: "创意" }, { k: "travel", n: "旅行" }, { k: "night", n: "深夜" }
+  ];
+  var CAT_EMOJI = { daily:"🧺", romantic:"💞", food:"🍰", outdoor:"🌿", home:"🛋️", creative:"🎨", travel:"✈️", night:"🌙" };
+  var CAT_NAME = { daily:"日常", romantic:"浪漫", food:"美食", outdoor:"户外", home:"宅家", creative:"创意", travel:"旅行", night:"深夜" };
+  var STATUSES = [
+    { key: "miss",  text: "想你",     emoji: "💭", color: "#b06bff" },
+    { key: "hit",   text: "锤你",     emoji: "👊", color: "#ff7a59" },
+    { key: "pinch", text: "揪你耳朵", emoji: "👂", color: "#ff5fa2" },
+    { key: "here",  text: "在呢",     emoji: "✨", color: "#34c759" },
+    { key: "busy",  text: "忙ing",    emoji: "🌀", color: "#ffa726" },
+    { key: "sleep", text: "睡着了",   emoji: "😴", color: "#8e9bb3" }
+  ];
+  var STATUS_TEXT = {}; var STATUS_COLOR = {}; var STATUS_ORDER = [];
+  STATUSES.forEach(function (s) { STATUS_TEXT[s.key] = s.emoji + " " + s.text; STATUS_COLOR[s.key] = s.color; STATUS_ORDER.push(s.key); });
+
+  var couple = load(LS.couple, null);
+  var photos = load(LS.photos, []);
+  var plans = load(LS.plans, []);
+  var wishlist = load("seeyou_wish", []);   // 想做的灵感小事 id 列表
+  var BG_KEY = "seeyou_bg";
+  var bg = load(BG_KEY, null);
+  function currentRole() { return (couple && couple.currentRole) || "me"; }
+  function otherRole(r) { return r === "me" ? "partner" : "me"; }
+  function roleName(r) { return r === "me" ? (couple.myNick || "我") : (couple.partnerNick || "TA"); }
+
+  // ---------- 云端同步（自建 Node 轻后端） ----------
+  var relationId = load("seeyou_rid", null);
+  var deviceId = load("seeyou_device", null);
+  var online = !!relationId;            // 云端模式（已绑定真实关系）
+  var myStatus = "miss";                // 我自己的心情状态
+  var pollTimer = null;
+
+  function apiReq(method, path, body) {
+    var opt = { method: method, headers: { "Content-Type": "application/json" } };
+    if (body !== undefined) opt.body = JSON.stringify(body);
+    return fetch(path, opt).then(function (r) { return r.json(); });
+  }
+  function applyServer(d) {
+    // you=null 表示只有一方加入，默认认领 sideA
+    var you = d.you || (d.sideA && !d.sideB ? "A" : null);
+    var mySide = you === "A" ? d.sideA : d.sideB;
+    var partnerSide = you === "A" ? d.sideB : d.sideA;
+    couple = {
+      myNick: (mySide && mySide.nick) || "我",
+      partnerNick: (partnerSide && partnerSide.nick) || "TA",
+      anniversary: d.anniversary || todayStr(),
+      partnerStatus: (partnerSide && partnerSide.status) || "miss",
+      currentRole: "me", simulated: false
+    };
+    myStatus = (mySide && mySide.status) || "miss";
+    photos = d.photos || [];
+    plans = d.plans || [];
+    wishlist = (mySide && mySide.wishlist) || [];
+  }
+  function refresh() {
+    if (!online || !relationId) return Promise.resolve();
+    return apiReq("GET", "/api/relation/" + relationId + "?device=" + encodeURIComponent(deviceId))
+      .then(applyServer).then(renderAll);
+  }
+  function pushSync() {
+    if (!online || !relationId) return;
+    apiReq("POST", "/api/relation/" + relationId + "/sync", {
+      deviceId: deviceId, nick: couple.myNick, status: myStatus,
+      anniversary: couple.anniversary, plans: plans, photos: photos
+    }).catch(function () {});
+  }
+  function persist() {
+    save(LS.couple, couple); save(LS.photos, photos); save(LS.plans, plans);
+    if (online) pushSync();
+  }
+  function startPoll() { stopPoll(); if (online && relationId) pollTimer = setInterval(refresh, 4000); }
+  function stopPoll() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
+
+  // ---------- 工具 ----------
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+    return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+  }); }
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function todayStr() { var d = new Date(); return d.toISOString().slice(0, 10); }
+  function fmtDateTime(iso) {
+    if (!iso) return "";
+    var d = new Date(iso);
+    if (isNaN(d)) return iso;
+    var pad = function (n) { return n < 10 ? "0" + n : "" + n; };
+    var wk = ["日", "一", "二", "三", "四", "五", "六"][d.getDay()];
+    return (d.getMonth() + 1) + "月" + d.getDate() + "日 周" + wk + " " + pad(d.getHours()) + ":" + pad(d.getMinutes());
+  }
+  function daysBetween(a, b) {
+    var ms = new Date(b).setHours(0,0,0,0) - new Date(a).setHours(0,0,0,0);
+    return Math.floor(ms / 86400000);
+  }
+
+  // ---------- 视图切换 ----------
+  function showScreen() {
+    var bound = !!(couple || (online && relationId));
+    $("screen-bind").classList.toggle("hidden", bound);
+    $("screen-main").classList.toggle("hidden", !bound);
+    if (bound) {
+      $("set-my-nick").value = couple.myNick || "";
+      $("set-partner-nick").value = couple.partnerNick || "";
+      $("set-anniv").value = couple.anniversary || todayStr();
+      $("set-status").value = online ? myStatus : (couple.partnerStatus || "miss");
+      $("set-partner-nick").disabled = online;
+      if ($("label-status")) $("label-status").textContent = online ? "我的心情（TA 可见）" : "模拟对方状态";
+      applyBg();
+      updateRoleSwitch();
+      switchView("home");
+      renderAll();
+      if (online) startPoll(); else stopPoll();
+    } else {
+      stopPoll();
+    }
+  }
+  function switchView(v) {
+    var titles = { home: ["首页", "SeeYou · 你们的专属空间"], plans: ["计划", "所有约会安排"], ideas: ["灵感", "100 件情侣小事"], mine: ["我的", "设置与数据管理"] };
+    $("top-title").textContent = titles[v][0];
+    $("top-sub").textContent = titles[v][1];
+    $("view-home").classList.toggle("hidden", v !== "home");
+    $("view-plans").classList.toggle("hidden", v !== "plans");
+    $("view-ideas").classList.toggle("hidden", v !== "ideas");
+    $("view-mine").classList.toggle("hidden", v !== "mine");
+    $("fab-add").classList.toggle("hidden", v !== "plans");
+    $("home-bg").style.display = (v === "home") ? "block" : "none";
+    if (v === "ideas") renderIdeas();
+    document.querySelectorAll(".nav-item").forEach(function (n) {
+      n.classList.toggle("active", n.getAttribute("data-view") === v);
+    });
+  }
+  document.querySelectorAll(".nav-item").forEach(function (n) {
+    n.addEventListener("click", function () { switchView(n.getAttribute("data-view")); });
+  });
+
+  function applyBg() {
+    var el = $("home-bg");
+    if (bg) { el.style.backgroundImage = "url(" + bg + ")"; }
+    else { el.style.backgroundImage = "linear-gradient(160deg,#ffe3ec 0%,#efe6ff 100%)"; }
+  }
+  function updateRoleSwitch() {
+    if (!couple) return;
+    var el = $("role-switch");
+    if (online) { el.style.display = "none"; return; }   // 云端真双人，无需同设备切换
+    el.style.display = "block";
+    el.textContent = "当前身份：" + roleName(currentRole()) + " · 点击切换";
+  }
+  $("role-switch").addEventListener("click", function () {
+    if (!couple || online) return;
+    couple.currentRole = otherRole(currentRole());
+    save(LS.couple, couple);
+    updateRoleSwitch();
+    renderAll();
+  });
+
+  // ---------- 渲染 ----------
+  function renderAll() {
+    renderCouple();
+    renderNextDate();
+    renderPhotos();
+    renderPlans();
+  }
+
+  function renderCouple() {
+    if (!couple) return;
+    var myInitial = (couple.myNick || "我").slice(0, 1);
+    var pInitial = (couple.partnerNick || "TA").slice(0, 1);
+    $("ava-me").firstChild.nodeValue = myInitial;
+    $("ava-partner").firstChild.nodeValue = pInitial;
+    $("home-names").textContent = (couple.myNick || "我") + " & " + (couple.partnerNick || "TA");
+    var d = daysBetween(couple.anniversary || todayStr(), new Date());
+    $("home-days").textContent = "已相恋 " + (d < 0 ? 0 : d) + " 天";
+    var st = couple.partnerStatus || "miss";
+    $("dot-partner").className = "dot";
+    $("dot-partner").style.backgroundColor = STATUS_COLOR[st];
+    $("partner-status-text").textContent = STATUS_TEXT[st];
+  }
+
+  function getNextPlan() {
+    var now = new Date();
+    var list = plans.filter(function (p) { return new Date(p.datetime) >= now; })
+                    .sort(function (a, b) { return new Date(a.datetime) - new Date(b.datetime); });
+    return list[0] || null;
+  }
+  function renderNextDate() {
+    var box = $("next-date-body");
+    var p = getNextPlan();
+    if (!p) {
+      box.innerHTML = '<div class="next-empty">暂无 upcoming 计划，去「计划」页添加一个吧 💡</div>';
+      return;
+    }
+    var tags = (p.activities || []).map(function (a) { return '<span class="tag">' + esc(a) + "</span>"; }).join("");
+    box.innerHTML =
+      '<div class="row"><span class="when">' + esc(fmtDateTime(p.datetime)) + '</span></div>' +
+      (p.location ? '<div class="loc">📍 ' + esc(p.location) + "</div>" : "") +
+      (tags ? '<div style="margin-top:8px;">' + tags + "</div>" : "") +
+      (p.food ? '<div class="plan-meta" style="margin-top:6px;">🍽️ ' + esc(p.food) + "</div>" : "") +
+      (p.note ? '<div class="plan-meta" style="margin-top:4px;color:var(--muted);">“' + esc(p.note) + '”</div>' : "");
+  }
+
+  function renderPhotos() {
+    var grid = $("photo-grid");
+    grid.innerHTML = "";
+    // 上传按钮
+    var up = document.createElement("div");
+    up.className = "upload-btn";
+    up.textContent = "＋";
+    up.addEventListener("click", function () { $("photo-input").click(); });
+    grid.appendChild(up);
+    // 隐藏 file input（每次新建）
+    var fi = $("photo-input");
+    if (!fi) {
+      fi = document.createElement("input");
+      fi.type = "file"; fi.accept = "image/*"; fi.id = "photo-input";
+      fi.style.display = "none";
+      fi.addEventListener("change", onPhotoPicked);
+      document.body.appendChild(fi);
+    }
+    photos.slice().reverse().forEach(function (ph) {
+      var img = document.createElement("img");
+      var src = photoSrc(ph);
+      img.src = src || "";
+      img.addEventListener("click", function () { openPreview(src); });
+      if (src && src.indexOf("cloud://") === 0) {
+        resolveCloudSrc(src).then(function (real) { if (real) img.src = real; });
+      }
+      grid.appendChild(img);
+    });
+    if (photos.length === 0) {
+      var tip = document.createElement("div");
+      tip.className = "photo-empty";
+      tip.style.gridColumn = "span 2";
+      tip.textContent = "点击 ＋ 上传你们的第一张照片";
+      grid.appendChild(tip);
+    }
+  }
+
+  function onPhotoPicked(e) {
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      compressImage(reader.result, 800, function (dataUrl) {
+        if (online) {
+          // 在线：先上传到后端（云端写云存储 / 本地写 ./uploads），拿回可访问 URL 再存
+          apiReq("POST", "/api/upload", { data: dataUrl }).then(function (r) {
+            if (r && r.url) photos.push({ id: uid(), url: r.url, addedAt: Date.now() });
+            else photos.push({ id: uid(), data: dataUrl, addedAt: Date.now() }); // 上传失败则回退本地 base64
+            persist(); renderPhotos();
+          }).catch(function () {
+            photos.push({ id: uid(), data: dataUrl, addedAt: Date.now() });
+            persist(); renderPhotos();
+          });
+        } else {
+          // 离线：直接存本地 base64 预览
+          photos.push({ id: uid(), data: dataUrl, addedAt: Date.now() });
+          persist(); renderPhotos();
+        }
+      });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  }
+
+  // 取照片可显示源：优先 url（云端/本地），回退 base64
+  function photoSrc(ph) { return ph.url || ph.data; }
+  // 把云端 cloud:// 文件 ID 换成临时可访问 URL
+  function resolveCloudSrc(cloudId) {
+    return apiReq("GET", "/api/fileurl?f=" + encodeURIComponent(cloudId))
+      .then(function (j) { return (j && j.url) || null; })
+      .catch(function () { return null; });
+  }
+  function compressImage(dataUrl, maxW, cb) {
+    var img = new Image();
+    img.onload = function () {
+      var w = img.width, h = img.height;
+      if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+      var cv = document.createElement("canvas");
+      cv.width = w; cv.height = h;
+      cv.getContext("2d").drawImage(img, 0, 0, w, h);
+      try { cb(cv.toDataURL("image/jpeg", 0.82)); }
+      catch (e) { cb(dataUrl); }
+    };
+    img.onerror = function () { cb(dataUrl); };
+    img.src = dataUrl;
+  }
+
+  function renderPlans() {
+    var box = $("plan-list");
+    if (plans.length === 0) {
+      box.innerHTML = '<div class="photo-empty">还没有计划，点右下角 ＋ 添加 💡</div>';
+      return;
+    }
+    var me = online ? deviceId : currentRole();
+    var sorted = plans.slice().sort(function (a, b) { return new Date(a.datetime) - new Date(b.datetime); });
+    box.innerHTML = sorted.map(function (p) {
+      var owner = p.owner || (online ? deviceId : "me");
+      var status = p.status || "confirmed";
+      var isMine = (owner === me);
+      var tags = (p.activities || []).map(function (a) { return '<span class="tag">' + esc(a) + "</span>"; }).join("");
+      var statusText = status === "draft" ? "草稿·未发送" : status === "sent" ? "已发送·待对方处理" : "已确认";
+      var ownerLabel = (owner === me) ? (couple.myNick || "我") : (couple.partnerNick || "TA");
+      var now = new Date();
+      var isOver = new Date(p.datetime) < now;
+      var canCard = isOver && photos.length > 0;
+      var actions = "";
+      if (isMine && status === "draft") {
+        actions = '<button class="mini-btn done" data-act="send">发送给 TA</button>' +
+                  '<button class="mini-btn del" data-act="del">删除</button>';
+      } else if (!isMine && status === "sent") {
+        actions = '<button class="mini-btn done" data-act="edit">修改计划</button>' +
+                  '<button class="mini-btn" data-act="confirm">确认接收</button>';
+      } else if (isMine && status === "sent") {
+        actions = '<span class="plan-meta" style="color:var(--purple);">⏳ 等待 ' + esc(couple.partnerNick || "TA") + ' 处理中…</span>';
+      } else {
+        actions = isMine ? '<button class="mini-btn del" data-act="del">删除</button>' : '';
+      }
+      var cardBtn = canCard ? '<button class="mini-btn" data-act="card">🎞️ 生成纪念卡</button>' : "";
+      var listBtn = '<button class="mini-btn" data-act="list">📋 生成清单</button>';
+      var todoHtml = "";
+      if (p.todos && p.todos.length) {
+        todoHtml = '<div class="plan-todos">' + p.todos.map(function (t, idx) {
+          return '<div class="plan-todo' + (t.done ? " done" : "") + '" data-act="toggletodo" data-idx="' + idx + '">' +
+            '<span class="cb">' + (t.done ? "✓" : "") + '</span><span class="txt">' + esc(t.text) + '</span></div>';
+        }).join("") + '</div>';
+      }
+      return '<div class="plan-item' + (status === "confirmed" ? " done" : "") + '" data-id="' + p.id + '">' +
+        '<div class="plan-head"><span class="plan-when">' + esc(fmtDateTime(p.datetime)) + '</span>' +
+        '<span class="plan-state' + (status === "confirmed" ? " finished" : "") + '">' + statusText + '</span></div>' +
+        '<div class="plan-meta"><span class="k">发起人：</span>' + esc(ownerLabel) + (p.partnerEdited ? ' · 对方已修改' : '') + '</div>' +
+        (p.location ? '<div class="plan-meta"><span class="k">地点：</span>' + esc(p.location) + "</div>" : "") +
+        (tags ? '<div style="margin-top:6px;">' + tags + "</div>" : "") +
+        (p.food ? '<div class="plan-meta" style="margin-top:6px;">🍽️ ' + esc(p.food) + "</div>" : "") +
+        (p.note ? '<div class="plan-meta" style="margin-top:4px;color:var(--muted);">“' + esc(p.note) + '”</div>' : "") +
+        todoHtml +
+        '<div class="plan-actions">' + actions + cardBtn + listBtn + '</div></div>';
+    }).join("");
+  }
+
+  // 计划列表事件委托
+  $("plan-list").addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-act]");
+    if (!btn) return;
+    var item = e.target.closest(".plan-item");
+    var id = item.getAttribute("data-id");
+    var act = btn.getAttribute("data-act");
+    var p = plans.find(function (x) { return x.id === id; });
+    if (!p) return;
+    if (act === "del") {
+      if (confirm("确定删除这条约会计划？")) {
+        plans = plans.filter(function (x) { return x.id !== id; });
+        persist(); renderPlans(); renderNextDate();
+      }
+    } else if (act === "send") {
+      p.status = "sent";
+      persist();
+      renderPlans();
+      alert("已发送给 " + (couple.partnerNick || "TA") + "，等待对方确认～");
+    } else if (act === "edit") {
+      openPlanForm(id);
+    } else if (act === "confirm") {
+      p.status = "confirmed";
+      persist(); renderPlans(); renderNextDate();
+    } else if (act === "toggletodo") {
+      var idx = parseInt(btn.getAttribute("data-idx"), 10);
+      if (p.todos && p.todos[idx]) { p.todos[idx].done = !p.todos[idx].done; persist(); renderPlans(); }
+    } else if (act === "card") {
+      openMemoCard(p);
+    } else if (act === "list") {
+      openChecklistCard(p);
+    }
+  });
+
+  // ---------- 绑定 ----------
+  function validCode(c) { return /^\d{6,8}$/.test(c); }
+  $("bind-submit").addEventListener("click", function () {
+    var nick = $("bind-nick").value.trim();
+    if (!nick) { $("bind-err").textContent = "请填写你的昵称"; return; }
+    var code = $("bind-code").value.trim();
+    var anniv = $("bind-anniv").value || todayStr();
+    $("bind-err").textContent = "连接中…";
+    function enter(r) {
+      relationId = r.relationId; deviceId = r.deviceId; online = true;
+      save("seeyou_rid", relationId); save("seeyou_device", deviceId);
+      $("bind-err").textContent = "";
+      refresh().then(function() { showScreen(); }).catch(function() { showScreen(); });
+    }
+    if (!code) {
+      // 创建关系（后端生成配对码）
+      apiReq("POST", "/api/relation", { nick: nick, anniv: anniv })
+        .then(function (r) {
+          if (r.error) { $("bind-err").textContent = r.error; return; }
+          alert("已创建关系！配对码是 " + r.code + "\n把它发给 TA，TA 在绑定页输入同一配对码即可加入。");
+          enter(r);
+        })
+        .catch(function (e) { console.error("create err:", e); $("bind-err").textContent = "连接后端失败：请确认 server.js 已启动，并用 http://localhost:3000 打开本页。"; });
+    } else {
+      // 加入关系（用 TA 给的配对码）
+      apiReq("POST", "/api/relation/join", { code: code, nick: nick })
+        .then(function (r) {
+          if (r.error) { $("bind-err").textContent = r.error; return; }
+          enter(r);
+        })
+        .catch(function (e) { console.error("join err:", e); $("bind-err").textContent = "连接后端失败，或配对码无效/已绑定。（按F12看控制台详情）"; });
+    }
+  });
+  $("bind-sim").addEventListener("click", function () {
+    var nick = $("bind-nick").value.trim() || "我";
+    var code = String(Math.floor(100000 + Math.random() * 900000));
+    couple = {
+      myNick: nick, partnerNick: "模拟TA", pairCode: code,
+      anniversary: todayStr(), partnerStatus: "miss", simulated: true
+    };
+    save(LS.couple, couple);
+    showScreen();
+  });
+  $("bind-anniv").value = todayStr();
+
+  // ---------- 心情状态（点击圆点切换） ----------
+  $("dot-partner").addEventListener("click", function () {
+    if (!couple) return;
+    var order = STATUS_ORDER;
+    if (online) {
+      // 云端：切换我自己的心情，同步给 TA
+      var i = order.indexOf(myStatus);
+      myStatus = order[(i + 1) % order.length];
+      pushSync();
+    } else {
+      // 离线模拟：切换对方状态
+      var j = order.indexOf(couple.partnerStatus || "miss");
+      couple.partnerStatus = order[(j + 1) % order.length];
+      save(LS.couple, couple);
+    }
+    renderCouple();
+  });
+
+  // ---------- 设置页 ----------
+  function syncSettings() {
+    if (!couple) return;
+    couple.myNick = $("set-my-nick").value.trim() || "我";
+    couple.partnerNick = $("set-partner-nick").value.trim() || "另一半";
+    couple.anniversary = $("set-anniv").value || todayStr();
+    if (online) {
+      myStatus = $("set-status").value;   // 云端：set-status 表示「我的心情」
+    } else {
+      couple.partnerStatus = $("set-status").value;
+    }
+    persist();
+    renderCouple();
+  }
+  ["set-my-nick", "set-partner-nick", "set-anniv", "set-status"].forEach(function (id) {
+    $(id).addEventListener("change", syncSettings);
+  });
+  $("clear-photos").addEventListener("click", function () {
+    if (confirm("确定清空所有甜蜜瞬间照片？")) { photos = []; persist(); renderPhotos(); }
+  });
+  $("clear-plans").addEventListener("click", function () {
+    if (confirm("确定清空所有约会计划？")) { plans = []; persist(); renderPlans(); renderNextDate(); }
+  });
+  $("set-bg").addEventListener("click", function () { $("bg-input").click(); });
+  $("bg-input").addEventListener("change", function (e) {
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      compressImage(reader.result, 1200, function (d) { bg = d; save(BG_KEY, bg); applyBg(); });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  });
+  $("reset-bg").addEventListener("click", function () { bg = null; localStorage.removeItem(BG_KEY); applyBg(); });
+  $("unbind").addEventListener("click", function () {
+    if (confirm("解除绑定将清除本机数据并退出，确定？")) {
+      localStorage.removeItem(LS.couple);
+      localStorage.removeItem(LS.photos);
+      localStorage.removeItem(LS.plans);
+      localStorage.removeItem(BG_KEY);
+      localStorage.removeItem("seeyou_rid");
+      localStorage.removeItem("seeyou_device");
+      relationId = null; deviceId = null; online = false;
+      couple = null; photos = []; plans = []; bg = null;
+      stopPoll();
+      showScreen();
+    }
+  });
+
+  // ---------- 计划表单 ----------
+  var selectedActs = [];
+  var planTodos = [];
+  var editingPlanId = null;
+  function toLocalInput(iso) {
+    var d = new Date(iso);
+    if (isNaN(d)) return "";
+    var pad = function (n) { return n < 10 ? "0" + n : "" + n; };
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + "T" + pad(d.getHours()) + ":" + pad(d.getMinutes());
+  }
+  function renderTodos() {
+    var box = $("plan-todos");
+    box.innerHTML = "";
+    planTodos.forEach(function (t, i) {
+      var row = document.createElement("div");
+      row.className = "todo-row";
+      var inp = document.createElement("input");
+      inp.type = "text"; inp.value = t.text; inp.placeholder = "待办事项";
+      inp.maxLength = 30;
+      inp.addEventListener("input", function () { planTodos[i].text = inp.value; });
+      var x = document.createElement("span");
+      x.className = "x"; x.textContent = "×";
+      x.addEventListener("click", function () { planTodos.splice(i, 1); renderTodos(); });
+      row.appendChild(inp); row.appendChild(x);
+      box.appendChild(row);
+    });
+  }
+  function addTodoText(text) {
+    if (planTodos.some(function (t) { return t.text === text; })) return;
+    planTodos.push({ id: uid(), text: text, done: false });
+    renderTodos();
+  }
+  function buildActChips() {
+    var box = $("plan-acts");
+    box.innerHTML = ACTIVITIES.map(function (a) {
+      return '<span class="chip" data-act="' + esc(a) + '">' + esc(a) + "</span>";
+    }).join("");
+    box.querySelectorAll(".chip").forEach(function (c) {
+      c.addEventListener("click", function () {
+        var a = c.getAttribute("data-act");
+        var i = selectedActs.indexOf(a);
+        if (i >= 0) {
+          selectedActs.splice(i, 1); c.classList.remove("on");
+        } else {
+          selectedActs.push(a); c.classList.add("on");
+          (TODO_SUGGEST[a] || []).forEach(addTodoText);
+        }
+      });
+    });
+  }
+  function openPlanForm(id) {
+    editingPlanId = id || null;
+    selectedActs = [];
+    buildActChips();
+    var p = null;
+    if (id) { p = plans.find(function (x) { return x.id === id; }); }
+    if (p) {
+      $("plan-datetime").value = toLocalInput(p.datetime);
+      $("plan-loc").value = p.location || "";
+      $("plan-food").value = p.food || "";
+      $("plan-note").value = p.note || "";
+      planTodos = (p.todos || []).map(function (t) { return { id: t.id, text: t.text, done: !!t.done }; });
+      (p.activities || []).forEach(function (a) { selectedActs.push(a); });
+      $("plan-acts").querySelectorAll(".chip").forEach(function (c) {
+        if (selectedActs.indexOf(c.getAttribute("data-act")) >= 0) c.classList.add("on");
+      });
+      $("sheet-title").textContent = "修改约会计划";
+    } else {
+      $("plan-datetime").value = "";
+      $("plan-loc").value = "";
+      $("plan-food").value = "";
+      $("plan-note").value = "";
+      planTodos = [];
+      $("sheet-title").textContent = "新建约会计划";
+    }
+    renderTodos();
+    $("plan-err").textContent = "";
+    $("modal-plan").classList.remove("hidden");
+  }
+  function closePlanForm() { $("modal-plan").classList.add("hidden"); }
+
+  // ---------- 灵感页：情侣 100 件小事 ----------
+  var ideaFilter = "all";
+  function renderIdeas() {
+    var catBox = $("idea-cats");
+    if (!catBox.dataset.built) {
+      catBox.innerHTML = IDEA_CATS.map(function (c) { return '<span class="chip" data-cat="' + c.k + '">' + c.n + "</span>"; }).join("");
+      catBox.querySelectorAll(".chip").forEach(function (ch) {
+        ch.addEventListener("click", function () {
+          ideaFilter = ch.getAttribute("data-cat");
+          catBox.querySelectorAll(".chip").forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-cat") === ideaFilter); });
+          renderIdeaList();
+        });
+      });
+      catBox.querySelector('[data-cat="all"]').classList.add("on");
+      catBox.dataset.built = "1";
+    }
+    renderIdeaList();
+    $("wish-count").textContent = wishlist.length;
+  }
+  function renderIdeaList() {
+    var list = $("idea-list");
+    var items = IDEAS.map(function (it, i) { return { i: i, c: it[0], t: it[1] }; })
+                     .filter(function (o) { return ideaFilter === "all" || o.c === ideaFilter; });
+    list.innerHTML = items.map(function (o) {
+      var wished = wishlist.indexOf(String(o.i)) >= 0;
+      return '<div class="idea-item" data-i="' + o.i + '">' +
+        '<div class="idea-left"><span class="idea-emoji">' + CAT_EMOJI[o.c] + '</span>' +
+        '<span class="idea-text">' + esc(o.t) + '<span class="idea-cat">' + CAT_NAME[o.c] + '</span></span></div>' +
+        '<div class="idea-acts">' +
+          '<button class="mini-btn" data-act="join">＋计划</button>' +
+          '<button class="mini-btn ' + (wished ? "idea-wish-on" : "") + '" data-act="wish">' + (wished ? "★想做" : "☆想做") + '</button>' +
+        '</div></div>';
+    }).join("");
+  }
+  function toggleWish(idx) {
+    idx = String(idx);
+    var i = wishlist.indexOf(idx);
+    if (i >= 0) wishlist.splice(i, 1); else wishlist.push(idx);
+    save("seeyou_wish", wishlist);
+    persist();
+    renderIdeaList();
+    $("wish-count").textContent = wishlist.length;
+  }
+  $("idea-list").addEventListener("click", function (e) {
+    var btn = e.target.closest("[data-act]"); if (!btn) return;
+    var item = e.target.closest(".idea-item"); if (!item) return;
+    var idx = item.getAttribute("data-i");
+    var act = btn.getAttribute("data-act");
+    if (act === "join") {
+      openPlanForm();
+      addTodoText(IDEAS[idx][1]);
+      renderTodos();
+      switchView("plans");
+    } else if (act === "wish") {
+      toggleWish(idx);
+    }
+  });
+  $("idea-random").addEventListener("click", function () {
+    var n = Math.floor(Math.random() * IDEAS.length);
+    ideaFilter = "all";
+    $("idea-cats").querySelectorAll(".chip").forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-cat") === "all"); });
+    renderIdeaList();
+    var el = $("idea-list").querySelector('[data-i="' + n + '"]');
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.style.transition = "background .3s";
+      el.style.background = "rgba(255,213,79,.6)";
+      setTimeout(function () { el.style.background = ""; }, 1200);
+    }
+  });
+  $("idea-wishlist").addEventListener("click", function () {
+    if (wishlist.length === 0) { alert("还没有标记想做的事，点小事右边的「☆想做」试试～"); return; }
+    openWishCard();
+  });
+
+  // ---------- 约会清单卡（事前计划，可分享） ----------
+  function drawListCard(ctx, W, H, title, subtitle, infos, todos, footer) {
+    var g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, "#ffd9e8"); g.addColorStop(1, "#e3d4ff");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#7a3ea8"; ctx.font = "bold 42px sans-serif";
+    ctx.fillText(title, W / 2, 92);
+    ctx.fillStyle = "#5b2d82"; ctx.font = "bold 50px sans-serif";
+    ctx.fillText(subtitle, W / 2, 160);
+    var y = 210;
+    ctx.textAlign = "left";
+    ctx.fillStyle = "rgba(255,255,255,.9)";
+    roundRect(ctx, 40, y, W - 80, 150, 22); ctx.fill();
+    ctx.fillStyle = "#5b2d82"; ctx.font = "bold 28px sans-serif";
+    infos.forEach(function (line, i) { ctx.fillText(line, 72, y + 52 + i * 44); });
+    var ty = y + 200;
+    ctx.fillStyle = "#7a3ea8"; ctx.font = "bold 34px sans-serif";
+    ctx.fillText("✅ 约会待办", 56, ty);
+    ty += 52;
+    ctx.font = "28px sans-serif";
+    todos.forEach(function (t) {
+      if (ty > H - 110) return;
+      if (t.done) {
+        ctx.fillStyle = "#9a8aa8";
+        var txt = "✓ " + t.text;
+        ctx.fillText(txt, 72, ty);
+        var tw = ctx.measureText(txt).width;
+        ctx.strokeStyle = "#c0b0cc"; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(72, ty - 9); ctx.lineTo(72 + tw, ty - 9); ctx.stroke();
+      } else {
+        ctx.fillStyle = "#3a2a4a";
+        ctx.fillText("○ " + t.text, 72, ty);
+      }
+      ty += 44;
+    });
+    if (todos.length === 0) { ctx.fillStyle = "#9a8aa8"; ctx.fillText("（暂无待办）", 72, ty); }
+    ctx.textAlign = "center"; ctx.fillStyle = "#7a3ea8"; ctx.font = "italic 28px sans-serif";
+    ctx.fillText(footer, W / 2, H - 48);
+  }
+  function openChecklistCard(p) {
+    var canvas = $("list-canvas"); var ctx = canvas.getContext("2d");
+    var W = canvas.width, H = canvas.height;
+    drawListCard(ctx, W, H,
+      "我们的约会清单",
+      (couple.myNick || "我") + " ❤ " + (couple.partnerNick || "TA"),
+      [
+        "📅 " + fmtDateOnly(p.datetime) + " " + weekdayOf(p.datetime),
+        "📍 " + (p.location || "神秘地点"),
+        "🎈 " + ((p.activities || []).join(" · ") || "约会")
+      ],
+      (p.todos || []).map(function (t) { return { text: t.text, done: !!t.done }; }),
+      "和你的每一次见面，都值得期待 ✨"
+    );
+    $("modal-list").classList.remove("hidden");
+  }
+  function openWishCard() {
+    var canvas = $("list-canvas"); var ctx = canvas.getContext("2d");
+    var W = canvas.width, H = canvas.height;
+    var items = wishlist.map(function (id) { var i = parseInt(id, 10); return IDEAS[i] ? IDEAS[i][1] : ""; }).filter(Boolean);
+    drawListCard(ctx, W, H,
+      "我们的愿望清单",
+      (couple.myNick || "我") + " ❤ " + (couple.partnerNick || "TA"),
+      ["一起想做的事 · 共 " + items.length + " 件"],
+      items.map(function (t) { return { text: t, done: false }; }),
+      "一件一件慢慢实现，都是我们的小确幸 ✨"
+    );
+    $("modal-list").classList.remove("hidden");
+  }
+  $("list-close").addEventListener("click", function () { $("modal-list").classList.add("hidden"); });
+  $("modal-list").addEventListener("click", function (e) { if (e.target === $("modal-list")) $("modal-list").classList.add("hidden"); });
+  $("list-save").addEventListener("click", function () {
+    var url = $("list-canvas").toDataURL("image/png");
+    var a = document.createElement("a"); a.href = url; a.download = "seeyou_date_list.png";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  });
+  $("list-share").addEventListener("click", function () {
+    var canvas = $("list-canvas");
+    if (!canvas.toBlob) { alert("当前浏览器不支持分享，请点「保存图片」。"); return; }
+    canvas.toBlob(function (blob) {
+      var file = new File([blob], "seeyou_date_list.png", { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], title: "我们的约会清单" }).catch(function () {});
+      } else if (navigator.share) {
+        navigator.share({ title: "我们的约会清单", text: "我们的约会清单 ✨" }).catch(function () {});
+      } else { alert("当前环境不支持系统分享，请点「保存图片」后手动分享。"); }
+    });
+  });
+  $("fab-add").addEventListener("click", function () { openPlanForm(); });
+  $("plan-cancel").addEventListener("click", closePlanForm);
+  $("todo-add").addEventListener("click", function () { addTodoText(""); });
+  $("modal-plan").addEventListener("click", function (e) { if (e.target === $("modal-plan")) closePlanForm(); });
+  $("plan-save").addEventListener("click", function () {
+    var dt = $("plan-datetime").value;
+    if (!dt) { $("plan-err").textContent = "请选择日期时间"; return; }
+    var payload = {
+      datetime: new Date(dt).toISOString(),
+      location: $("plan-loc").value.trim(),
+      activities: selectedActs.slice(),
+      food: $("plan-food").value.trim(),
+      note: $("plan-note").value.trim(),
+      todos: planTodos.map(function (t) { return { id: t.id, text: t.text, done: !!t.done }; })
+    };
+    if (editingPlanId) {
+      var p = plans.find(function (x) { return x.id === editingPlanId; });
+      if (p) {
+        p.datetime = payload.datetime; p.location = payload.location;
+        p.activities = payload.activities; p.food = payload.food; p.note = payload.note;
+        p.todos = payload.todos;
+        if ((online ? deviceId : "me") !== (p.owner || (online ? deviceId : "me"))) p.partnerEdited = true;
+      }
+    } else {
+      plans.push({
+        id: uid(), datetime: payload.datetime, location: payload.location,
+        activities: payload.activities, food: payload.food, note: payload.note,
+        todos: payload.todos,
+        owner: (online ? deviceId : "me"), status: "draft", partnerEdited: false, createdAt: Date.now()
+      });
+    }
+    persist();
+    closePlanForm();
+    switchView("plans");
+    renderPlans(); renderNextDate();
+  });
+
+  // ---------- 大图预览 ----------
+  function openPreview(src) { $("prev-img").src = src; $("prev-mask").classList.remove("hidden"); }
+  $("prev-close").addEventListener("click", function () { $("prev-mask").classList.add("hidden"); });
+  $("prev-mask").addEventListener("click", function (e) { if (e.target === $("prev-mask")) $("prev-mask").classList.add("hidden"); });
+
+  // ---------- 约会纪念卡 ----------
+  function fmtDateOnly(iso) {
+    var d = new Date(iso); if (isNaN(d)) return "";
+    return (d.getMonth() + 1) + "月" + d.getDate() + "日";
+  }
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  function drawCover(ctx, img, x, y, w, h) {
+    if (!img || !img.width) return;
+    var ir = img.width / img.height, r = w / h, sw, sh, sx, sy;
+    if (ir > r) { sh = img.height; sw = sh * r; sx = (img.width - sw) / 2; sy = 0; }
+    else { sw = img.width; sh = sw / r; sx = 0; sy = (img.height - sh) / 2; }
+    ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+  }
+  function openMemoCard(p) {
+    var canvas = $("card-canvas");
+    var ctx = canvas.getContext("2d");
+    var W = canvas.width, H = canvas.height;
+    var myN = couple.myNick || "我", pN = couple.partnerNick || "TA";
+    var dDays = daysBetween(couple.anniversary || todayStr(), new Date());
+    // 背景渐变
+    var g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, "#ffd9e8"); g.addColorStop(1, "#e3d4ff");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    // 标题与署名
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#7a3ea8";
+    ctx.font = "bold 42px sans-serif";
+    ctx.fillText("我们的约会纪念日", W / 2, 92);
+    ctx.fillStyle = "#5b2d82";
+    ctx.font = "bold 54px sans-serif";
+    ctx.fillText(myN + " ❤ " + pN, W / 2, 164);
+    // 加载照片（兼容本地 URL / base64 / 云端 cloud:// 临时链接）
+    var srcPromises = photos.slice(0, 4).map(function (ph) {
+      var raw = ph.url || ph.data;
+      if (raw && raw.indexOf("cloud://") === 0) return resolveCloudSrc(raw);
+      return Promise.resolve(raw);
+    });
+    Promise.all(srcPromises).then(function (srcList) {
+      var imgs = srcList.filter(Boolean).map(function (s) { var im = new Image(); im.src = s; return im; });
+      Promise.all(imgs.map(function (im) {
+        return new Promise(function (res) { if (im.complete) return res(); im.onload = res; im.onerror = res; });
+      })).then(function () {
+        var top = 210, areaH = 470, pad = 26;
+      if (imgs.length === 1) {
+        roundRect(ctx, pad, top, W - 2 * pad, areaH, 18); ctx.save(); ctx.clip();
+        drawCover(ctx, imgs[0], pad, top, W - 2 * pad, areaH); ctx.restore();
+      } else {
+        var cols = 2, rows = Math.ceil(imgs.length / 2);
+        var cw = (W - 2 * pad - pad) / 2, ch = (areaH - pad * (rows - 1)) / rows;
+        imgs.forEach(function (im, i) {
+          var c = i % 2, r = Math.floor(i / 2);
+          var x = pad + c * (cw + pad), y = top + r * (ch + pad);
+          roundRect(ctx, x, y, cw, ch, 14); ctx.save(); ctx.clip();
+          drawCover(ctx, im, x, y, cw, ch); ctx.restore();
+        });
+      }
+      // 信息卡
+      var y = 726;
+      ctx.fillStyle = "rgba(255,255,255,.86)";
+      roundRect(ctx, 40, y, W - 80, 240, 22); ctx.fill();
+      ctx.textAlign = "left"; ctx.fillStyle = "#5b2d82";
+      ctx.font = "bold 30px sans-serif";
+      ctx.fillText("📅 " + fmtDateOnly(p.datetime) + " " + (weekdayOf(p.datetime)), 72, y + 52);
+      ctx.fillText("📍 " + (p.location || "神秘地点"), 72, y + 104);
+      ctx.fillText("🎈 " + ((p.activities || []).join(" · ") || "约会"), 72, y + 156);
+      ctx.fillText("💑 已相恋 " + (dDays < 0 ? 0 : dDays) + " 天", 72, y + 208);
+      // 底部文案
+      ctx.textAlign = "center";
+      ctx.fillStyle = "#7a3ea8";
+      ctx.font = "italic 28px sans-serif";
+      ctx.fillText("和你的每一次见面，都值得纪念 ✨", W / 2, H - 48);
+        $("modal-card").classList.remove("hidden");
+      });
+    });
+  }
+  function weekdayOf(iso) {
+    var d = new Date(iso); if (isNaN(d)) return "";
+    return "周" + ["日", "一", "二", "三", "四", "五", "六"][d.getDay()];
+  }
+  $("card-close").addEventListener("click", function () { $("modal-card").classList.add("hidden"); });
+  $("modal-card").addEventListener("click", function (e) { if (e.target === $("modal-card")) $("modal-card").classList.add("hidden"); });
+  $("card-save").addEventListener("click", function () {
+    var url = $("card-canvas").toDataURL("image/png");
+    var a = document.createElement("a");
+    a.href = url; a.download = "seeyou_date_memory.png";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  });
+  $("card-share").addEventListener("click", function () {
+    var canvas = $("card-canvas");
+    if (!canvas.toBlob) { alert("当前浏览器不支持分享，请点「保存图片」。"); return; }
+    canvas.toBlob(function (blob) {
+      var file = new File([blob], "seeyou_date_memory.png", { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        navigator.share({ files: [file], title: "我们的约会纪念日" }).catch(function () {});
+      } else if (navigator.share) {
+        navigator.share({ title: "我们的约会纪念日", text: "和你的每一次见面都值得纪念 ✨" }).catch(function () {});
+      } else {
+        alert("当前浏览器不支持直接分享，请点「保存图片」后自行分享～");
+      }
+    }, "image/png");
+  });
+
+  // ---------- 启动 ----------
+  if (online && relationId) { refresh().then(function() { showScreen(); }).catch(function() { showScreen(); }); }
+  else { showScreen(); }
+})();
+// ---------- Service Worker 注册（PWA 添加到主屏幕 / 离线可用） ----------
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("/sw.js").catch(function () {});
+  });
+}
+</script>
+</body>
+</html>

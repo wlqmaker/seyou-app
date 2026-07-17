@@ -1,0 +1,1 @@
+{"name": "seeyou-app", "version": "2.0.0", "private": true, "description": "SeeYou 情侣约会 App - Vercel Serverless + Blob 持久化", "scripts": {"start": "node server.js"}, "dependencies": {"@vercel/blob": "^1.0.0"}, "engines": {"node": ">=18"}}
